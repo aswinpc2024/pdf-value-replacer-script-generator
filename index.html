@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Form Value Replacer</title>
+    <style>
+        :root {
+            --color-primary: #2180a0;
+            --color-primary-hover: #1d74a0;
+            --color-bg: #f5f5f5;
+            --color-surface: #ffffff;
+            --color-text: #1a1a1a;
+            --color-border: #d0d0d0;
+            --color-success: #22c55e;
+            --color-error: #c01f2f;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--color-bg);
+            color: var(--color-text);
+            margin: 0;
+            padding: 20px;
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: var(--color-primary);
+            font-size: 28px;
+        }
+
+        .section {
+            background: var(--color-surface);
+            border-radius: 8px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: var(--color-primary);
+            border-bottom: 2px solid var(--color-primary);
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--color-text);
+        }
+
+        input, textarea, select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--color-border);
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: border-color 0.2s;
+        }
+
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px rgba(33, 128, 160, 0.1);
+        }
+
+        .row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .row.full {
+            grid-template-columns: 1fr;
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background-color: var(--color-primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--color-primary-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-secondary {
+            background-color: #e5e5e5;
+            color: var(--color-text);
+            margin-right: 10px;
+        }
+
+        .btn-secondary:hover {
+            background-color: #d0d0d0;
+        }
+
+        .buttons {
+            margin-top: 30px;
+            text-align: center;
+        }
+
+        .message {
+            padding: 12px 16px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .message.success {
+            background-color: #dcfce7;
+            color: #166534;
+            border: 1px solid #22c55e;
+            display: block;
+        }
+
+        .message.error {
+            background-color: #fee2e2;
+            color: #991b1b;
+            border: 1px solid var(--color-error);
+            display: block;
+        }
+
+        .info-box {
+            background-color: #eff6ff;
+            border-left: 4px solid var(--color-primary);
+            padding: 12px 16px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .replacements-list {
+            background-color: #f9fafb;
+            border: 1px solid var(--color-border);
+            border-radius: 6px;
+            padding: 16px;
+            margin-top: 16px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .replacement-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--color-border);
+            font-size: 14px;
+        }
+
+        .replacement-item:last-child {
+            border-bottom: none;
+        }
+
+        .replacement-item .existing {
+            color: #666;
+            font-weight: 500;
+        }
+
+        .replacement-item .arrow {
+            color: var(--color-primary);
+            margin: 0 12px;
+        }
+
+        .replacement-item .new {
+            color: var(--color-success);
+            font-weight: 500;
+        }
+
+        .btn-remove {
+            background-color: #fee2e2;
+            color: var(--color-error);
+            padding: 4px 8px;
+            font-size: 12px;
+            border-radius: 4px;
+        }
+
+        .btn-remove:hover {
+            background-color: #fecaca;
+        }
+
+        .add-pair-btn {
+            background-color: #dbeafe;
+            color: var(--color-primary);
+            padding: 10px 16px;
+            font-size: 14px;
+            margin-top: 12px;
+        }
+
+        .add-pair-btn:hover {
+            background-color: #bfdbfe;
+        }
+
+        @media (max-width: 768px) {
+            .row {
+                grid-template-columns: 1fr;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔄 PDF Form Value Replacer</h1>
+
+        <div id="message" class="message"></div>
+
+        <div class="section">
+            <div class="section-title">📋 Upload PDF &amp; Add Replacements</div>
+
+            <div class="info-box">
+                <strong>How to use:</strong> Upload your PDF form, add the existing values and their replacements, then generate a Python script tailored to your PDF.
+            </div>
+
+            <div class="form-group">
+                <label for="pdfFile">Select PDF File:</label>
+                <input type="file" id="pdfFile" accept=".pdf" />
+            </div>
+
+            <div id="pdfInfo" style="display: none; margin-bottom: 20px; padding: 12px; background-color: #f0f9ff; border-radius: 6px; color: #0369a1;">
+                <strong>PDF Selected:</strong> <span id="pdfName"></span>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">🔀 Add Value Replacements</div>
+
+            <div class="form-group">
+                <label for="existingValue">Existing Value:</label>
+                <input type="text" id="existingValue" placeholder="Enter the value to find in the PDF" />
+            </div>
+
+            <div class="form-group">
+                <label for="newValue">New Value (Replacement):</label>
+                <input type="text" id="newValue" placeholder="Enter the replacement value" />
+            </div>
+
+            <button class="add-pair-btn" onclick="addReplacement()">+ Add Replacement Pair</button>
+        </div>
+
+        <div class="section">
+            <div class="section-title">✅ Replacement Pairs</div>
+            <div id="replacementsList" class="replacements-list" style="display: none;"></div>
+            <div id="emptyState" style="color: #999; text-align: center; padding: 20px;">No replacements added yet</div>
+        </div>
+
+        <div class="buttons">
+            <button class="btn-secondary" onclick="clearAll()">Clear All</button>
+            <button class="btn-primary" onclick="generateScript()">📥 Generate Python Script</button>
+        </div>
+
+        <div class="section" style="margin-top: 40px; background-color: #f9fafb; border-top: 2px solid var(--color-primary);">
+            <div class="section-title">👨‍💻 Developer Information</div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+                <div style="padding: 12px; background-color: white; border-radius: 6px; border-left: 4px solid var(--color-primary);">
+                    <div style="font-weight: 600; color: var(--color-primary);">Developer Name</div>
+                    <div style="color: #666; margin-top: 4px;">Aswin Chandran PC</div>
+                </div>
+                <div style="padding: 12px; background-color: white; border-radius: 6px; border-left: 4px solid var(--color-primary);">
+                    <div style="font-weight: 600; color: var(--color-primary);">Designation</div>
+                    <div style="color: #666; margin-top: 4px;">Software Test Engineer</div>
+                </div>
+                <div style="padding: 12px; background-color: white; border-radius: 6px; border-left: 4px solid var(--color-primary);">
+                    <div style="font-weight: 600; color: var(--color-primary);">Organization</div>
+                    <div style="color: #666; margin-top: 4px;">Pixbit Solutions Private Limited</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let replacements = [];
+        let uploadedFileName = '';
+
+        function addReplacement() {
+            const existingValue = document.getElementById('existingValue').value.trim();
+            const newValue = document.getElementById('newValue').value.trim();
+
+            if (!existingValue || !newValue) {
+                showMessage('Please enter both existing and new values', 'error');
+                return;
+            }
+
+            replacements.push({
+                existing: existingValue,
+                new: newValue,
+                id: Date.now()
+            });
+
+            document.getElementById('existingValue').value = '';
+            document.getElementById('newValue').value = '';
+
+            updateReplacementsList();
+            showMessage(`Replacement added: "${existingValue}" → "${newValue}"`, 'success');
+        }
+
+        function removeReplacement(id) {
+            replacements = replacements.filter(r => r.id !== id);
+            updateReplacementsList();
+        }
+
+        function updateReplacementsList() {
+            const listDiv = document.getElementById('replacementsList');
+            const emptyState = document.getElementById('emptyState');
+
+            if (replacements.length === 0) {
+                listDiv.style.display = 'none';
+                emptyState.style.display = 'block';
+                return;
+            }
+
+            emptyState.style.display = 'none';
+            listDiv.style.display = 'block';
+
+            listDiv.innerHTML = replacements.map(r => `
+                <div class="replacement-item">
+                    <div>
+                        <span class="existing">"${r.existing}"</span>
+                        <span class="arrow">→</span>
+                        <span class="new">"${r.new}"</span>
+                    </div>
+                    <button class="btn-remove" onclick="removeReplacement(${r.id})">Remove</button>
+                </div>
+            `).join('');
+        }
+
+        document.getElementById('pdfFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                uploadedFileName = file.name;
+                document.getElementById('pdfName').textContent = file.name;
+                document.getElementById('pdfInfo').style.display = 'block';
+            }
+        });
+
+        function generateScript() {
+            if (replacements.length === 0) {
+                showMessage('Please add at least one replacement pair', 'error');
+                return;
+            }
+
+            const fileName = uploadedFileName || 'your_form.pdf';
+
+            const pythonScript = `#!/usr/bin/env python3
+"""
+PDF Form Value Replacer Script
+Generated for: ${fileName}
+This script replaces specified values in a PDF form.
+"""
+
+import PyPDF2
+from PyPDF2 import PdfReader, PdfWriter
+import sys
+import os
+
+# Configuration: Define your replacements here
+REPLACEMENTS = {
+${replacements.map(r => `    "${r.existing}": "${r.new}",`).join('\n')}
+}
+
+def replace_pdf_values(input_pdf, output_pdf, replacements):
+    """
+    Replace values in a PDF form.
+    
+    Args:
+        input_pdf (str): Path to the input PDF file
+        output_pdf (str): Path to save the output PDF file
+        replacements (dict): Dictionary of {existing_value: new_value}
+    
+    Returns:
+        bool: True if successful, False otherwise
+    """
+    try:
+        # Read the PDF
+        with open(input_pdf, 'rb') as f:
+            reader = PdfReader(f)
+            writer = PdfWriter()
+
+            # Iterate through all pages
+            for page_num, page in enumerate(reader.pages):
+                print(f"Processing page {page_num + 1}...")
+
+                # Check if page has text content
+                if "/Contents" in page:
+                    try:
+                        page_content = page.get_object()["/Contents"].get_object().get_data()
+                        content_str = page_content.decode('latin-1')
+
+                        # Replace values
+                        for existing, new in replacements.items():
+                            if existing in content_str:
+                                print(f"  ✓ Found and replacing: '{existing}' → '{new}'")
+                                content_str = content_str.replace(existing, new)
+                            else:
+                                print(f"  ✗ Not found: '{existing}'")
+
+                        # Update page content
+                        page["/Contents"].get_object()._data = content_str.encode('latin-1')
+
+                    except Exception as e:
+                        print(f"  ⚠ Warning processing page {page_num + 1}: {str(e)}")
+
+                # Add the page to the writer
+                writer.add_page(page)
+
+            # Write the output PDF
+            with open(output_pdf, 'wb') as f:
+                writer.write(f)
+
+            print(f"\\n✓ PDF successfully created: {output_pdf}")
+            return True
+
+    except FileNotFoundError:
+        print(f"Error: File '{input_pdf}' not found.")
+        return False
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return False
+
+def main():
+    """Main function to run the PDF replacer."""
+    
+    # Set input and output file paths
+    input_pdf = "${fileName}"  # Change this to your input PDF path
+    output_pdf = "output_" + input_pdf  # Output file will be named output_<original_name>
+
+    print("=" * 60)
+    print("PDF Form Value Replacer")
+    print("=" * 60)
+    print(f"Input PDF: {input_pdf}")
+    print(f"Output PDF: {output_pdf}")
+    print(f"Total replacements: {len(REPLACEMENTS)}")
+    print("=" * 60)
+    print()
+
+    # Validate input file exists
+    if not os.path.exists(input_pdf):
+        print(f"Error: Input file '{input_pdf}' does not exist.")
+        sys.exit(1)
+
+    # Run the replacement
+    success = replace_pdf_values(input_pdf, output_pdf, REPLACEMENTS)
+
+    if success:
+        print(f"\\n✓ Process completed successfully!")
+        print(f"  Output saved to: {output_pdf}")
+    else:
+        print(f"\\n✗ Process failed. Please check the error messages above.")
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()
+`;
+
+            downloadScript(pythonScript);
+            showMessage('✓ Python script generated and downloaded successfully!', 'success');
+        }
+
+        function downloadScript() {
+            const pythonScript = generatePythonCode();
+            const blob = new Blob([pythonScript], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'pdf_replacer.py';
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        }
+
+        function generatePythonCode() {
+            const fileName = uploadedFileName || 'your_form.pdf';
+
+            return `#!/usr/bin/env python3
+"""
+PDF Form Value Replacer Script
+Generated for: ${fileName}
+This script replaces specified values in a PDF form.
+"""
+
+import PyPDF2
+from PyPDF2 import PdfReader, PdfWriter
+import sys
+import os
+
+# Configuration: Define your replacements here
+REPLACEMENTS = {
+${replacements.map(r => `    "${r.existing}": "${r.new}",`).join('\n')}
+}
+
+def replace_pdf_values(input_pdf, output_pdf, replacements):
+    """
+    Replace values in a PDF form.
+    
+    Args:
+        input_pdf (str): Path to the input PDF file
+        output_pdf (str): Path to save the output PDF file
+        replacements (dict): Dictionary of {existing_value: new_value}
+    
+    Returns:
+        bool: True if successful, False otherwise
+    """
+    try:
+        # Read the PDF
+        with open(input_pdf, 'rb') as f:
+            reader = PdfReader(f)
+            writer = PdfWriter()
+
+            # Iterate through all pages
+            for page_num, page in enumerate(reader.pages):
+                print(f"Processing page {page_num + 1}...")
+
+                # Check if page has text content
+                if "/Contents" in page:
+                    try:
+                        page_content = page.get_object()["/Contents"].get_object().get_data()
+                        content_str = page_content.decode('latin-1')
+
+                        # Replace values
+                        for existing, new in replacements.items():
+                            if existing in content_str:
+                                print(f"  ✓ Found and replacing: '{existing}' → '{new}'")
+                                content_str = content_str.replace(existing, new)
+                            else:
+                                print(f"  ✗ Not found: '{existing}'")
+
+                        # Update page content
+                        page["/Contents"].get_object()._data = content_str.encode('latin-1')
+
+                    except Exception as e:
+                        print(f"  ⚠ Warning processing page {page_num + 1}: {str(e)}")
+
+                # Add the page to the writer
+                writer.add_page(page)
+
+            # Write the output PDF
+            with open(output_pdf, 'wb') as f:
+                writer.write(f)
+
+            print(f"\\n✓ PDF successfully created: {output_pdf}")
+            return True
+
+    except FileNotFoundError:
+        print(f"Error: File '{input_pdf}' not found.")
+        return False
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return False
+
+def main():
+    """Main function to run the PDF replacer."""
+    
+    # Set input and output file paths
+    input_pdf = "${fileName}"  # Change this to your input PDF path
+    output_pdf = "output_" + input_pdf  # Output file will be named output_<original_name>
+
+    print("=" * 60)
+    print("PDF Form Value Replacer")
+    print("=" * 60)
+    print(f"Input PDF: {input_pdf}")
+    print(f"Output PDF: {output_pdf}")
+    print(f"Total replacements: {len(REPLACEMENTS)}")
+    print("=" * 60)
+    print()
+
+    # Validate input file exists
+    if not os.path.exists(input_pdf):
+        print(f"Error: Input file '{input_pdf}' does not exist.")
+        sys.exit(1)
+
+    # Run the replacement
+    success = replace_pdf_values(input_pdf, output_pdf, REPLACEMENTS)
+
+    if success:
+        print(f"\\n✓ Process completed successfully!")
+        print(f"  Output saved to: {output_pdf}")
+    else:
+        print(f"\\n✗ Process failed. Please check the error messages above.")
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()
+`;
+        }
+
+        function showMessage(text, type) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.textContent = text;
+            messageDiv.className = `message ${type}`;
+            setTimeout(() => {
+                messageDiv.className = 'message';
+            }, 5000);
+        }
+
+        function clearAll() {
+            replacements = [];
+            document.getElementById('existingValue').value = '';
+            document.getElementById('newValue').value = '';
+            document.getElementById('pdfFile').value = '';
+            document.getElementById('pdfInfo').style.display = 'none';
+            uploadedFileName = '';
+            updateReplacementsList();
+            showMessage('All data cleared', 'success');
+        }
+
+        // Allow Enter key to add replacement
+        document.getElementById('newValue').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                addReplacement();
+            }
+        });
+    </script>
+</body>
+</html>
